@@ -1,0 +1,10 @@
+public class UpdatePictureManager {
+
+    @InvocableMethod
+    public static void getPictureAndSendToFaceRecognition(List<Contact> contacts) {
+        Contact c = contacts[0];
+        
+        MegviiNotificationCallout.MegviiNotificationCallout(c.Id);
+    }
+        
+}

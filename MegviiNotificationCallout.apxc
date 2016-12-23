@@ -1,0 +1,159 @@
+public class MegviiNotificationCallout {
+	@future(Callout=true)
+    public static void MegviiNotificationCallout(string contactId) {
+    	Contact c = [select Id from Contact where Id =: contactId]; 
+        List<Attachment> atts = [select id, Body, ContentType from attachment where parentId = : contactId];
+        
+        Attachment a = atts[0];
+        System.debug(a.ContentType);
+        
+        Http h = new Http();
+        HttpResponse res;
+        
+        HttpRequest req = new HttpRequest();
+        string boundary = '----Megvii7MA4YWxkTrZu0gW';
+        req.setHeader('Content-Type', 'multipart/form-data; boundary=' + boundary);
+        
+        String apiKeyParam = GetBodyForStringParameters(boundary, 'api_key', 'oxzC5V_7DvpM7uNQITr2ICdBKs1S1f2V');
+        String apiSecretParam = GetBodyForStringParameters(boundary, 'api_secret', 'IElJ3_FXpUrOxeFMYzcUziNLQq-WLX3W');
+        
+        // image
+        String fileParam = GetBodyForFileParameters(boundary, 'image_file', a);
+        
+        String endParam = '--' + boundary + '--';
+        
+        //Blob b = GetGlobalRequestAsABlob(apiKeyParam, apiSecretParam, fileParam, endParam, a);
+        //system.debug(body);
+        
+        String b = apiKeyParam + apiSecretParam + fileParam + endParam;
+        system.debug(b);
+        String requestURL='https://api.megvii.com/facepp/v3/detect';
+        
+        req.setMethod('POST');
+        req.setBody(b);
+        req.setEndpoint(requestURL);
+		
+        try {
+    		res = h.send(req);
+		} catch(System.CalloutException e) {
+    		System.debug('Callout error: '+ e);
+		}
+        System.debug(res.getBody());
+        
+        MegviiDetect response = MegviiDetect.parse(res.getBody());
+        String face_token = response.faces[0].face_token;
+        System.debug(face_token);
+       
+        
+        //call setuserid
+        //
+        string queryString = '?api_key=oxzC5V_7DvpM7uNQITr2ICdBKs1S1f2V&api_secret=IElJ3_FXpUrOxeFMYzcUziNLQq-WLX3W&user_id=' + c.Id + '&face_token=' + face_token;
+        req = new HttpRequest();
+        requestURL='https://api.megvii.com/facepp/v3/face/setuserid' + queryString;
+        
+        req.setMethod('POST');
+        req.setEndpoint(requestURL);
+		
+        try {
+    		res = h.send(req);
+		} catch(System.CalloutException e) {
+    		System.debug('Callout error: '+ e);
+		}
+        System.debug(res.getBody());
+        
+        // call addface
+        //
+        string faceset_token = 'fc8bc42265d7d8571fc90cd9e016f2c1';
+        queryString = '?api_key=oxzC5V_7DvpM7uNQITr2ICdBKs1S1f2V&api_secret=IElJ3_FXpUrOxeFMYzcUziNLQq-WLX3W&faceset_token=' + faceset_token + '&face_tokens=' + face_token;
+        req = new HttpRequest();
+        requestURL='https://api.megvii.com/facepp/v3/faceset/addface' + queryString;
+        
+        req.setMethod('POST');
+        req.setEndpoint(requestURL);
+		
+        try {
+    		res = h.send(req);
+		} catch(System.CalloutException e) {
+    		System.debug('Callout error: '+ e);
+		}
+        System.debug(res.getBody());
+        
+        /*Http h = new Http();
+    
+    	// Instantiate a new HTTP request, specify the method (GET) as well as the endpoint
+    	HttpRequest req = new HttpRequest();
+        req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+    	String requestURL='https://api.megvii.com/facepp/v3/faceset/delete';
+    	
+        
+        requestURL = requestURL + '?api_key=oxzC5V_7DvpM7uNQITr2ICdBKs1S1f2V&api_secret=IElJ3_FXpUrOxeFMYzcUziNLQq-WLX3W&faceset_token=3effc2910d9b87248e6e44b838f4b18d';
+    	req.setEndpoint(requestURL);
+    	req.setMethod('POST');
+		HttpResponse res;
+        try {
+    		res = h.send(req);
+		} catch(System.CalloutException e) {
+    		System.debug('Callout error: '+ e);
+		}
+		System.debug(res.getBody());
+        //
+        */
+        
+    }
+    
+    public static string  GetBodyForStringParameters(string boundary, string key, string value) {
+        string body = '--' + boundary + '\r\n';
+        body += 'Content-Disposition: form-data; name=\"' + key + '\"' + '\r\n';
+        body += '\r\n';
+        body += value + '\r\n';
+        
+        return body;
+    }
+    
+    public static string GetBodyForFileParameters(string boundary, string key, Attachment a) {
+        string header = '--' + boundary + '\r\n';
+        header += 'Content-Disposition: form-data; name=\"' + key + '\"' + '; filename=\"image.jpg\"' + '\r\n';
+        header += 'Content-Type: application/octet-stream\r\n';
+        header += 'Content-Transfer-Encoding: base64\r\n';
+        header += '\r\n';
+        header += EncodingUtil.base64Encode(a.Body) + '\r\n';
+        
+       	//header += a.Body + '\r\n';
+        //return body;
+        
+        return header;
+        
+    }
+    
+    public static Blob GetGlobalRequestAsABlob(string apiKeyParam, string apiSecretParam, string fileParam, string endParam, Attachment a) {
+        String header = apiKeyParam + apiSecretParam + fileParam;
+        String headerEncoded = EncodingUtil.base64Encode(Blob.valueOf(header));
+        
+        while(headerEncoded.endsWith('=')) {
+           header+=' ';
+           headerEncoded = EncodingUtil.base64Encode(Blob.valueOf(header+'\r\n\r\n'));
+        }
+        
+        String bodyEncoded = EncodingUtil.base64Encode(a.Body);
+        String footerEncoded = EncodingUtil.base64Encode(Blob.valueOf(endParam));
+        
+        Blob bodyBlob = null;
+        String last4Bytes = bodyEncoded.substring(bodyEncoded.length()-4,bodyEncoded.length());
+        if(last4Bytes.endsWith('=')) {
+			Blob decoded4Bytes = EncodingUtil.base64Decode(last4Bytes);
+            HttpRequest tmp = new HttpRequest();
+            tmp.setBodyAsBlob(decoded4Bytes);
+            String last4BytesFooter = tmp.getBody()+endParam;   
+            bodyBlob = EncodingUtil.base64Decode(headerEncoded+bodyEncoded.substring(0,bodyEncoded.length()-4)+EncodingUtil.base64Encode(Blob.valueOf(last4BytesFooter)));
+        }
+        else {
+			bodyBlob = EncodingUtil.base64Decode(headerEncoded+bodyEncoded+footerEncoded);
+        }
+        
+        system.debug(EncodingUtil.convertToHex(a.Body));
+        
+        
+        
+        return bodyBlob;
+    }
+}

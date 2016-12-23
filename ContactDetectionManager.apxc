@@ -1,0 +1,12 @@
+@RestResource(urlMapping='/Contacts/*')
+global with sharing class ContactDetectionManager {
+	@HttpPost
+    global static void incrementContactDetectionNumber() {
+        RestRequest request = RestContext.request;
+
+        string contactId = request.requestURI.substring(request.requestURI.lastIndexOf('/')+1);
+        Contact c = [SELECT Number_of_times_detected__c  FROM Contact WHERE Id = :contactId];
+        c.Number_of_times_detected__c = c.Number_of_times_detected__c + 1;
+        update c;
+    }
+}

@@ -1,0 +1,11 @@
+@IsTest
+public class ContactDetectionManagerTest {
+    @isTest static void shouldReturnMartinAsAContactFirstName() {
+        RestRequest request = new RestRequest();
+        request.requestUri = 'https://eu11.salesforce.com/services/apexrest/Contact/0030Y000008AjMD';
+        request.httpMethod = 'PATCH';
+        RestContext.request = request;
+        
+        //ContactDetectionManager.incrementContactDetectionNumber('0030Y000008AjMD');
+    }
+}

@@ -1,0 +1,43 @@
+@RestResource(urlMapping='/ContactsToUpdate/*')
+global class ContactUpdateManager {
+    
+    private class Data {
+        String encodedImage;
+        
+    }
+    
+	@HttpPost
+    global static void updateBasedOnFidelityId() {
+        RestRequest request = RestContext.request;
+
+        string fidelityId = request.params.get('id');
+        
+        Contact c = [SELECT Id FROM Contact WHERE Email = :fidelityId];
+        
+        Attachment a = [SELECT ParentId, Body, Name from Attachment where ParentId = :c.Id and Name = 'Contact Picture'];
+        system.debug(RestContext.request.requestBody.toString());
+        
+        //string s = '{"encodedImage":"/9j/4AAQSkZJRgABAQAAAQABAAD/4QAqRXhpZgAASUkqAAgAAAABADEBAgAHAAAAGgAAAAAAAABHb29nbGUAAP/bAIQAAwICAwICAwMDAwQDAwQFCAUFBAQFCgcHBggMChUMCwoVCw0OEhANDhEOCxcQFhAREw8VFRMNDg0YFRkXDQ4QFQEDBAQGBAYKBgYKDQ4KDQ0NDQ4PDQ8NDQ4NDQ0NDw0NDQ0ODQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0N/8AAEQgAIwAjAwERAAIRAQMRAf/EABkAAAIDAQAAAAAAAAAAAAAAAAQFAwYHAP/EACoQAAIBAwIEBgIDAAAAAAAAAAECAwQFEQAhBhIxQQcTIlFhoUJxCIHR/8QAGQEBAAMBAQAAAAAAAAAAAAAAAwIEBQEG/8QAJBEAAwABAwQBBQAAAAAAAAAAAAECEQMEEhMhMkEFFDFRYZH/2gAMAwEAAhEDEQA/AEnFPjRx3Leua322nsNgBZZLhcVMrqR38tSMLt1zrzmltJvyo95rbpx4z/St2/xt8S2sT3yrl4fq7UKxKOON3Mc5d1JU8isSVCjdgMDG+tJ/EQpzNGE/mqVcXBc+D/EfiPiGOOpq6OOjjadoJXgmMgWRRn8huCNxgj21na+w6fs1Nvv/AKjvjBrNiukqsolImSUeiZOh1m1HF4NabVLJYlhlZQRHIR74Go4OcyKusdrd5IK6ggnikyjBF2IPX0n/AHVidVyzlx1EZH4g/wAf7TWVsVZY5xanj5uVQo7j1D4z960p31x7M1/GRq+QFw1wdd7LS0tsrIYKy2xSmZngYpI8p/LJ2+un60d7l6ryyxpbCdCcSaNabW1AkQYMhcnmhLAqvyD9/wB6oal5Zb09NovdJK4poxydvfR8iDh5CLnRqwJKhlGmpIWK7YENRbKSdipT9Ak4GjaGXJE0PDsETeZzErgd9zqXHBzqeiOqpMPkqFQfQ0bWRF+g6CYGJfLiYpjbA1NY/BHixlU5UEA8wPzpmFIqePL5KYPTfRNDr7BwpsxKPMyoHTprjWQs9xfWReZ6Uz1x11HAqfYOhp5EiUBTj406QD1DpWIwc741KhWhPW1EgJw599BTElEtJUSF3y52UaiiNJB1J6pFJ330khMP5yO50oZ//9k="}';
+       // try {
+        Data d = (Data) JSON.deserialize(
+                    RestContext.request.requestBody.toString(),
+                    Data.class
+                    );
+        
+        
+        
+        
+            Blob picContent = null;
+            if (d.encodedImage != null) {
+                picContent = EncodingUtil.base64Decode(d.encodedImage);
+                a.Body = picContent;
+                update a;
+            } else {
+                system.debug('pas trouvé!');
+            }
+        //} catch(Exception e) {
+            //system.debug(RestContext.request.requestBody.toString());
+            //throw new JSONException(RestContext.request.requestBody.toString(), e);
+        //}
+    }
+}
