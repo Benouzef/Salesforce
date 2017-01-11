@@ -7,7 +7,7 @@ global class ContactUpdateManager {
     }
     
 	@HttpPost
-    global static void updateBasedOnFidelityId() {
+    global static Id updateBasedOnFidelityId() {
         RestRequest request = RestContext.request;
 
         string fidelityId = request.params.get('id');
@@ -33,8 +33,10 @@ global class ContactUpdateManager {
                 a.Body = picContent;
                 update a;
             } else {
-                system.debug('pas trouvÃ©!');
+                system.debug('pas trouvé!');
             }
+        
+        return c.Id;
         //} catch(Exception e) {
             //system.debug(RestContext.request.requestBody.toString());
             //throw new JSONException(RestContext.request.requestBody.toString(), e);
