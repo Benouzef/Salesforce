@@ -5,8 +5,39 @@ global with sharing class ContactDetectionManager {
         RestRequest request = RestContext.request;
 
         string contactId = request.requestURI.substring(request.requestURI.lastIndexOf('/')+1);
-        Contact c = [SELECT Number_of_times_detected__c  FROM Contact WHERE Id = :contactId];
+        
+       	//contactId = '0030Y000009N0B4QAK';
+        Contact c = [SELECT OwnerId, Number_of_times_detected__c, Email, FirstName  FROM Contact WHERE Id = :contactId];
         c.Number_of_times_detected__c = c.Number_of_times_detected__c + 1;
+
+        Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+        
+        string emailaddress = c.Email.toLowerCase();
+        String[] toAddresses = new String[] {emailaddress};
+        mail.setToAddresses(toAddresses);
+        mail.setSubject('Bienvenue dans notre Magasin !');
+        mail.setPlainTextBody('Bonjour ' + c.FirstName);
+        // Pass this email message to the built-in sendEmail method
+        // of the Messaging class
+        Messaging.SendEmailResult[] results = Messaging.sendEmail(
+                                 new Messaging.SingleEmailMessage[] { mail });
+        
+        
+        
+        mail = new Messaging.SingleEmailMessage();
+        User u = [SELECT Email FROM User WHERE Id = :c.OwnerId];
+        
+        emailaddress = u.Email.toLowerCase();
+        toAddresses = new String[] {emailaddress};
+        mail.setToAddresses(toAddresses);
+        mail.setSubject('Un client dans notre Magasin !');
+        mail.setPlainTextBody(c.FirstName + ' est dans notre Magasin !');
+        // Pass this email message to the built-in sendEmail method
+        // of the Messaging class
+        results = Messaging.sendEmail(
+                                 new Messaging.SingleEmailMessage[] { mail });
+
+
         update c;
     }
 }
